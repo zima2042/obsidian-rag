@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta name="theme-color" content="#eef4fb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Obsidian 知识库</title>
+<link rel="stylesheet" href="style.css?v=12">
+</head>
+<body>
+<div class="app">
+  <!-- 侧栏：新建 + 历史对话 -->
+  <aside class="sidebar">
+    <button id="newChatBtn" class="new-chat-btn">+ 新建对话</button>
+    <div class="chat-list" id="chatList"></div>
+    <div class="sidebar-footer">
+      <div class="kb-stats-mini" id="kbStatsMini">知识库加载中...</div>
+      <button id="reindexBtn" class="reindex-btn" title="一键更新数据库（重新索引）">🔄 一键更新</button>
+    </div>
+  </aside>
+
+  <!-- 主区域：聊天 -->
+  <main class="chat-main">
+    <header class="topbar">
+      <div class="brand">Obsidian 知识库</div>
+      <div class="topbar-right">
+        <button id="themeBtn" class="theme-btn" title="切换深浅主题">🌙</button>
+        <button id="menuBtn" class="mobile-new-btn" title="历史对话">☰</button>
+        <button id="mobileNewBtn" class="mobile-new-btn" title="新建对话">＋</button>
+        <!-- 模型选择器 -->
+        <select id="modelSelect" class="model-select">
+          <option value="auto">🤖 自动（首选 DeepSeek）</option>
+          <option value="deepseek-v4-flash">⚡ DeepSeek V4 Flash</option>
+          <option value="glm-5.2">⚖️ GLM 5.2</option>
+          <option value="sensenova-6.8-flash-lite">✨ SenseNova</option>
+          <option value="qwen3.5:9b">🏠 本地 Qwen3.5 9B</option>
+        </select>
+      </div>
+    </header>
+
+    <!-- 移动端侧栏遮罩 + 抽屉 -->
+    <div class="drawer-mask" id="drawerMask" hidden></div>
+    <aside class="sidebar drawer" id="mobileDrawer">
+      <div class="drawer-header">
+        <span>历史对话</span>
+        <button class="drawer-close" id="drawerClose">×</button>
+      </div>
+      <button id="drawerNewBtn" class="new-chat-btn">+ 新建对话</button>
+      <div class="chat-list" id="drawerChatList"></div>
+    </aside>
+
+    <div class="chat-body" id="chatBody">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📚</div>
+        <div class="empty-title">Obsidian 知识库</div>
+        <div class="empty-sub" id="kbStatsLine">加载知识库统计中...</div>
+
+        <div class="kb-cards" id="kbCards">
+          <div class="kb-card"><div class="kb-card-num" id="statNotes">-</div><div class="kb-card-label">笔记</div></div>
+          <div class="kb-card"><div class="kb-card-num" id="statChunks">-</div><div class="kb-card-label">分块</div></div>
+          <div class="kb-card"><div class="kb-card-num" id="statEmbed">bge-m3</div><div class="kb-card-label">向量模型</div></div>
+        </div>
+
+        <div class="kb-last-update" id="kbLastUpdate">最近更新：加载中...</div>
+
+        <div class="empty-divider">试试这些提问 ✧</div>
+        <div class="hint-tags">
+          <span class="tag">我的专业是什么</span>
+          <span class="tag">保研需要什么条件</span>
+          <span class="tag">我的学籍信息</span>
+          <span class="tag">本周有什么考试安排</span>
+          <span class="tag">我的总学分是多少</span>
+          <span class="tag">最近有哪些比赛通知</span>
+        </div>
+
+        <div class="empty-tip">
+          💡 支持多轮对话（AI 记得上文）· 支持数据计算（学分/课时/绩点等）
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <textarea id="inputBox" rows="1" placeholder=""></textarea>
+        <button class="reindex-btn input-reindex" title="一键更新数据库">🔄</button>
+        <button id="sendBtn" class="send-btn">发送</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 笔记详情弹窗 -->
+<div class="modal-mask" id="noteModal" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <span id="noteTitle" class="modal-title"></span>
+      <button class="modal-close" id="noteClose">×</button>
+    </div>
+    <pre class="note-content" id="noteContent"></pre>
+  </div>
+</div>
+
+<script>
+/* 主题切换（浅色雾蓝 / 深色雾蓝，手动） */
+(function () {
+  var KEY = 'kb-theme';
+  var saved = localStorage.getItem(KEY) || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  var btn = document.getElementById('themeBtn');
+  function sync() {
+    var t = document.documentElement.getAttribute('data-theme');
+    btn.textContent = t === 'dark' ? '☀️' : '🌙';
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', t === 'dark' ? '#1f2b44' : '#eef4fb');
+  }
+  btn.addEventListener('click', function () {
+    var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem(KEY, t);
+    sync();
+  });
+  sync();
+})();
+/* PWA Service Worker 注册 */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function () {});
+}
+</script>
+<script src="app.js"></script>
+<script>
+/* 输入区常驻底部：用 visualViewport 精确锁定可见高度（兼容所有浏览器，绕开 vh/dvh 差异） */
+(function () {
+  var app = document.querySelector('.app');
+  if (!app) return;
+  function fix() {
+    if (window.visualViewport) {
+      app.style.height = window.visualViewport.height + 'px';
+    }
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fix);
+    window.visualViewport.addEventListener('scroll', fix);
+  }
+  window.addEventListener('resize', fix);
+  window.addEventListener('orientationchange', function () { setTimeout(fix, 300); });
+  fix();
+  setTimeout(fix, 300);   /* PWA 冷启动兜底 */
+  setTimeout(fix, 1000);
+})();
+</script>
+<script>
+/* 一键更新数据库：POST /reindex → 轮询 /reindex/status → 完成后刷新统计
+   同时绑定桌面侧栏按钮和顶栏圆钮 */
+(function () {
+  var btns = document.querySelectorAll('.reindex-btn');
+  if (!btns.length) return;
+  function refreshStats() {
+    fetch('/stats').then(function (r) { return r.json(); }).then(function (st) {
+      var n = document.getElementById('statNotes'), c = document.getElementById('statChunks'),
+          line = document.getElementById('kbStatsLine'), mini = document.getElementById('kbStatsMini');
+      if (n) n.textContent = st.notes;
+      if (c) c.textContent = st.chunks;
+      if (line) line.textContent = '共 ' + st.notes + ' 篇笔记 · ' + st.chunks + ' 个分块';
+      if (mini) mini.textContent = st.notes + ' 篇 · ' + st.chunks + ' 块';
+    }).catch(function () {});
+  }
+  btns.forEach(function (btn) {
+    var compact = btn.classList.contains('topbar-reindex') || btn.classList.contains('input-reindex');
+    var idle = compact ? '🔄' : '🔄 一键更新';
+    var busy = compact ? '⏳' : '⏳ 更新中...';
+    var done = compact ? '✓' : '✅ 更新完成';
+    var fail = compact ? '⚠️' : '⚠️ 失败';
+    btn.addEventListener('click', function () {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.textContent = busy;
+      fetch('/reindex', { method: 'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function () {
+          var t = setInterval(function () {
+            fetch('/reindex/status').then(function (r) { return r.json(); }).then(function (st) {
+              if (!st.running) {
+                clearInterval(t);
+                btn.disabled = false;
+                btn.textContent = st.error ? fail : done;
+                refreshStats();
+                setTimeout(function () { btn.textContent = idle; }, 3000);
+              }
+            }).catch(function () {});
+          }, 2000);
+        })
+        .catch(function () {
+          btn.disabled = false;
+          btn.textContent = fail;
+        });
+    });
+  });
+})();
+</script>
+</body>
+</html>

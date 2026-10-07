@@ -1,0 +1,44 @@
+# ---- 私有配置 / 凭据 ----
+.env
+.env.local
+
+# ---- 数据（向量库 / 爬取结果）----
+data/
+data_broken_*/
+crawled_*.json
+crawled_*.json.bak
+personal_data.json
+
+# ---- 登录态 / 浏览器 profile ----
+*_state*.json
+*.pw_profile*
+.pw_profile/
+.pw_*profile*/
+
+# ---- 日志 ----
+logs/
+*.log
+
+# ---- 图片缓存 ----
+pdqq_images/
+
+# ---- 构建产物 ----
+build/
+build2/
+build3/
+dist/
+__pycache__/
+*.pyc
+.venv/
+
+# ---- 脱敏工具与本地备份（不公开）----
+.backup_sanitize/
+_san_*.py
+health_check.ps1.bak
+debug_list.html
+
+# ---- 本地运行时产物 / 大文件 / 截图（不公开）----
+/*.png
+/*.jpg
+*.lock
+*.msi

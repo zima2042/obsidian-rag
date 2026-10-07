@@ -1,0 +1,17 @@
+# 文本文件自动判定，显式指定各行尾规则
+* text=auto
+
+# shell 脚本必须是 LF（CRLF 会让 bash 报 "command not found"）
+*.sh text eol=lf
+
+# Windows 批处理 / PowerShell 保持 CRLF
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Python 源码统一 LF
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
